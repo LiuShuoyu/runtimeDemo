@@ -11,18 +11,27 @@
 
 @interface UIViewController ()
 
+@property (nonatomic, strong) NSDate *date; //viewDidAppear 的时间
 
 @end
-const  NSString*visitCountKey = @"visitCountKey";
+const  char *viewDidAppearTimeIntervalKey = "viewDidAppearTimeIntervalKey";
 
 
 @implementation UIViewController (runtime)
 
 + (void)load
 {
-    SEL systemSel = @selector(viewDidAppear:);
-    SEL customSel = @selector(swizzleViewDidAppear:);
-    [UIViewController swizzleSystemSel:systemSel implementationCustomSel:customSel];
+    SEL systemDidAppearSel = @selector(viewDidAppear:);
+    SEL customDidAppearSel = @selector(swizzleViewDidAppear:);
+    [UIViewController swizzleSystemSel:systemDidAppearSel implementationCustomSel:customDidAppearSel];
+    
+    SEL sysDidDisappearSel =@selector(viewDidDisappear:);
+    SEL customwDidDisappearSel =@selector(swizzleViewDidDisappear:);
+    [UIViewController swizzleSystemSel:sysDidDisappearSel implementationCustomSel:customwDidDisappearSel];
+    
+    
+    
+    
 }
 
 + (void)swizzleSystemSel:(SEL)systemSel implementationCustomSel:(SEL)customSel
@@ -43,15 +52,35 @@ const  NSString*visitCountKey = @"visitCountKey";
     }
 }
 
+
 - (void)swizzleViewDidAppear:(BOOL )animated
 {
-    NSLog(@" class =%@ 访问一次  在这里实现用户访问用埋点",[self class] );
+    NSLog(@" class =%@ 访问一次 在这里实现用户统计用埋点\n",[self class] );
+    
+    [self setDate:[NSDate new]];
+    NSLog(@"访问时间 ＝%@",[self date]);
+    
     [self swizzleViewDidAppear:animated];
 }
 
 
+- (void)swizzleViewDidDisappear:(BOOL )animated
+{
+    [self swizzleViewDidDisappear:animated];
+    NSDate  *date=[NSDate new];
+    NSLog(@"访问时间%@  离开时间＝%@ \n ", date,self.date);
+    NSLog(@" %@访问时间TimeInterval ＝%f秒", [self class],[date timeIntervalSinceDate:self.date]);
+    
+}
 
+- (NSDate *)date
+{
+    return  objc_getAssociatedObject(self, viewDidAppearTimeIntervalKey);
+}
 
-
+- (void)setDate:(NSDate *)date
+{
+    objc_setAssociatedObject(self, viewDidAppearTimeIntervalKey, date, OBJC_ASSOCIATION_COPY_NONATOMIC);
+}
 @end
 
